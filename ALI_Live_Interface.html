@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>A.L.I. — Analogical Logic Intelligence</title>
+<style>
+:root{--bg:#0b1120;--panel:#121c2e;--panel2:#172338;--line:#26364d;--text:#e8eef8;--muted:#94a5bd;--accent:#7ce4c2;--accent2:#8bb8ff;--danger:#ff9b9b}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 15% 0,#1a2d47 0,transparent 40%),var(--bg);color:var(--text);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+main{width:min(900px,100% - 30px);margin:38px auto 70px}.top{display:flex;align-items:center;gap:13px;margin-bottom:28px}.logo{width:48px;height:48px;border:1px solid #4d7c83;border-radius:14px;display:grid;place-items:center;color:var(--accent);font-weight:800;font-size:20px;background:#142b36}.eyebrow{font-size:12px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-weight:700}.sub{color:var(--muted);font-size:14px;margin-top:2px}h1{font-size:clamp(27px,5vw,42px);letter-spacing:-1.4px;line-height:1.1;margin:0 0 9px}.intro{color:var(--muted);max-width:680px;margin:0 0 26px}.panel{background:linear-gradient(145deg,#142137,#101a2a);border:1px solid var(--line);border-radius:20px;padding:clamp(17px,4vw,27px);box-shadow:0 18px 60px #0002}.formgrid{display:grid;gap:17px}label{display:block;font-size:13px;font-weight:700;color:#c5d3e5;margin-bottom:8px}textarea{width:100%;min-height:115px;resize:vertical;background:#0c1524;border:1px solid #2a3b54;border-radius:12px;padding:14px;color:var(--text);font:inherit;outline:none}textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px #7ce4c21a}.actions{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:4px}button{border:0;border-radius:12px;padding:12px 19px;font:700 15px system-ui;cursor:pointer}.primary{background:var(--accent);color:#08231d}.primary:disabled{opacity:.55;cursor:wait}.secondary{background:#20304a;color:#dce8f8;border:1px solid #354862}.status{font-size:13px;color:var(--muted)}.result{margin-top:22px;display:none}.resulthead{display:flex;align-items:center;gap:10px;margin-bottom:15px}.dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px #7ce4c266}.result h2{font-size:20px;margin:0}.resultblock{background:#0c1524;border:1px solid #26364d;border-radius:13px;padding:16px;margin:12px 0}.resultblock h3{font-size:12px;text-transform:uppercase;letter-spacing:1.3px;color:var(--accent2);margin:0 0 8px}.resultblock p{margin:0;white-space:pre-wrap;overflow-wrap:anywhere}.error{color:var(--danger)}footer{color:#73849d;font-size:12px;text-align:center;margin-top:24px}a{color:var(--accent2)}
+@media(max-width:500px){main{margin-top:22px}.actions button{width:100%}.top{align-items:flex-start}}
+</style>
+</head>
+<body>
+<main>
+  <div class="top">
+    <div class="logo">A.L.I.</div>
+    <div><div class="eyebrow">Analogical Logic Intelligence</div><div class="sub">Reason by patterns, analogy, and actions</div></div>
+  </div>
+  <h1>Turn a problem into a plan.</h1>
+  <p class="intro">Describe your current situation and the desired outcome. A.L.I. will look for patterns, draw analogies, reason toward a solution, and propose actionable steps.</p>
+
+  <section class="panel">
+    <form id="thinkForm" class="formgrid">
+      <div>
+        <label for="problem">CURRENT PROBLEM</label>
+        <textarea id="problem" name="problem" required placeholder="What is happening right now? What obstacle are you facing?"></textarea>
+      </div>
+      <div>
+        <label for="desired">DESIRED STATE</label>
+        <textarea id="desired" name="desired_state" required placeholder="What would a successful outcome look like?"></textarea>
+      </div>
+      <div class="actions">
+        <button class="primary" id="thinkBtn" type="submit">Think with A.L.I. ↗</button>
+        <button class="secondary" type="button" id="clearBtn">Clear</button>
+        <span class="status" id="status" role="status">Connected target: forsystem.onrender.com</span>
+      </div>
+    </form>
+  </section>
+
+  <section class="result panel" id="result" aria-live="polite">
+    <div class="resulthead"><span class="dot"></span><h2>A.L.I. analysis</h2></div>
+    <div id="resultContent"></div>
+  </section>
+  <footer>A.L.I. experimental prototype · Your prompt is sent to the live backend for processing.</footer>
+</main>
+<script>
+const API_BASE = "https://forsystem.onrender.com";
+const form = document.getElementById("thinkForm");
+const btn = document.getElementById("thinkBtn");
+const statusEl = document.getElementById("status");
+const resultEl = document.getElementById("result");
+const contentEl = document.getElementById("resultContent");
+
+function safeText(v){
+  if(v === null || v === undefined) return "";
+  if(typeof v === "string") return v;
+  return JSON.stringify(v, null, 2);
+}
+function addBlock(title, value){
+  if(value === undefined || value === null || value === "") return;
+  const box = document.createElement("div");
+  box.className = "resultblock";
+  const h = document.createElement("h3"); h.textContent = title;
+  const p = document.createElement("p"); p.textContent = safeText(value);
+  box.append(h,p); contentEl.appendChild(box);
+}
+function renderResult(data){
+  contentEl.replaceChildren();
+  // Handle common response shapes while preserving any unrecognized payload.
+  const fields = [
+    ["Logical statement", data.logical_statement || data.logic || data.logical_form],
+    ["Analogical reasoning", data.analogy || data.analogies || data.reasoning],
+    ["Inferred solution", data.solution || data.inferred_solution || data.recommendation],
+    ["Action plan", data.actions || data.action_plan || data.plan || data.steps],
+    ["Abstract pattern", data.abstract_pattern || data.pattern],
+    ["Relevant memories", data.memories || data.retrieved_memories],
+    ["Full response", data.response || data.result || data.message]
+  ];
+  let shown = false;
+  for(const [title,value] of fields){ if(value !== undefined && value !== null && value !== ""){addBlock(title,value);shown=true;} }
+  if(!shown) addBlock("Response",data);
+  resultEl.style.display = "block";
+  resultEl.scrollIntoView({behavior:"smooth",block:"start"});
+}
+form.addEventListener("submit", async (e)=>{
+  e.preventDefault();
+  const problem = document.getElementById("problem").value.trim();
+  const desired_state = document.getElementById("desired").value.trim();
+  if(!problem || !desired_state) return;
+  btn.disabled = true; btn.textContent = "A.L.I. is thinking…";
+  statusEl.textContent = "Waking the Render service and processing your request…";
+  statusEl.classList.remove("error");
+  try{
+    const response = await fetch(`${API_BASE}/think`,{
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({problem,desired_state})
+    });
+    const raw = await response.text();
+    let data;
+    try{data=JSON.parse(raw)}catch{data={response:raw}}
+    if(!response.ok) throw new Error(data.error || data.message || `HTTP ${response.status}: ${raw}`);
+    renderResult(data);
+    statusEl.textContent = "Analysis complete.";
+  }catch(err){
+    statusEl.textContent = "Could not reach the API: " + err.message;
+    statusEl.classList.add("error");
+    resultEl.style.display = "block";
+    contentEl.replaceChildren();
+    addBlock("Connection issue", "Check that the Render service is awake, that POST /think is available, and that CORS permits this page's origin. Details: "+err.message);
+  }finally{
+    btn.disabled = false; btn.textContent = "Think with A.L.I. ↗";
+  }
+});
+document.getElementById("clearBtn").addEventListener("click",()=>{
+  form.reset(); resultEl.style.display="none"; contentEl.replaceChildren();
+  statusEl.textContent="Connected target: forsystem.onrender.com"; statusEl.classList.remove("error");
+});
+</script>
+</body>
+</html>
